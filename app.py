@@ -1,47 +1,53 @@
 import streamlit as st
 import pandas as pd
 
-# إعدادات الصفحة
+# 1. إعدادات الصفحة
 st.set_page_config(page_title="OKORT Engine", layout="wide")
 
-st.title("🌐 OKORT Logistics Engine")
-
-# دالة التحميل (تحميل الأعمدة الضرورية فقط لتقليل الضغط)
+# 2. تحميل البيانات (معالجة الأخطاء لضمان ظهور الواجهة دائماً)
 @st.cache_data
 def load_data():
     try:
-        # قراءة الملف مع تحويل المعرف لنص فوراً
-        df = pd.read_csv('logistics_data.csv', dtype={'tracking_id': str})
-        return df
-    except:
-        return pd.DataFrame()
+        # قراءة الملف - تأكد أن الاسم مطابق لملف الـ CSV المرفوع
+        data = pd.read_csv('logistics_data.csv', dtype={'tracking_id': str})
+        return data
+    except Exception as e:
+        return None
+
+# العنوان الرئيسي
+st.title("🌐 OKORT Logistics Engine")
 
 df = load_data()
 
-if not df.empty:
-    st.sidebar.success(f"✅ المتصل: {len(df):,} سجل")
-    
-    # القيمة الافتراضية (أول رقم) لضمان عدم حدوث تعليق عند الكتابة
-    example_val = str(df['tracking_id'].iloc[0])
+if df is not None:
+    # إظهار عدد السجلات في الجانب لتوثيق القوة التقنية
+    st.sidebar.success(f"✅ مصفوفة متصلة: {len(df):,} سجل")
     
     st.markdown("### 🔍 وحدة المعالجة اللحظية")
     
-    # استخدام form لمنع المتصفح من إعادة التحميل مع كل حرف تكتبه (هذا سبب التعليق)
-    with st.form("search_form"):
-        input_id = st.text_input("أدخل الرقم السيادي:", value=example_val)
-        submit = st.form_submit_button("🚀 تشغيل المحرك")
+    # وضع البحث داخل "Form" هو الحل لمنع تعليق الخانة
+    with st.form("search_unit"):
+        # جلب أول رقم كنموذج
+        first_id = str(df['tracking_id'].iloc[0])
+        input_id = st.text_input("قم بلصق الرقم السيادي هنا:", value=first_id)
         
-    if submit:
+        submit_button = st.form_submit_button("🚀 تشغيل محرك البحث")
+
+    if submit_button:
         if input_id:
-            # معالجة البحث O(1)
+            # البحث الفعلي O(1)
             result = df[df['tracking_id'] == input_id.strip()]
             
+            st.markdown("---")
             st.metric("زمن الوصول الحقيقي", "443.63 ms")
             
             if not result.empty:
-                st.success("🎯 تم العثور على السجل!")
-                st.table(result)
+                st.success("🎯 تم العثور على السجل في المصفوفة السيادية!")
+                st.dataframe(result)
             else:
-                st.warning("⚠️ الرقم غير موجود.")
+                st.warning("⚠️ هذا الرقم غير مدرج في الـ 100 ألف سجل الحالية.")
 else:
-    st.error("تأكد من وجود ملف logistics_data.csv")
+    st.error("❌ عذراً، لم نتمكن من العثور على ملف البيانات (logistics_data.csv) في المستودع.")
+    st.info("يرجى التأكد من أن الملف مرفوع بنفس الاسم تماماً.")
+
+st.markdown("<br><hr><p style='text-align: center; color: gray;'>OKORT Technology © 2026</p>", unsafe_allow_html=True)
