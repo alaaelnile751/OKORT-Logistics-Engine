@@ -1,101 +1,111 @@
-import streamlit as st
+import streamlit as st  # هذا السطر يحل مشكلة الخطأ في صورتك
 import pandas as pd
 import random
 import string
 import io
 
-st.set_page_config(page_title="OKORT Logistics BI", layout="wide")
+# إعداد الصفحة لتكون احترافية وواسعة
+st.set_page_config(page_title="OKORT Global E-Commerce Hub", layout="wide")
 
-# --- محرك توليد البيانات الثابت (لضمان مطابقة البحث) ---
+# --- محرك توليد بيانات التجارة العالمية (Scale: 100k) ---
 @st.cache_data
-def generate_fixed_business_data():
-    # تثبيت العشوائية لضمان عدم تغير البيانات عند الرفرش
-    random.seed(42) 
-    
+def generate_amazon_scale_data():
+    random.seed(101) # لضمان ثبات الأرقام والمطابقة في البحث
     size = 100000 
-    customers = ['أحمد محمد علي', 'سارة محمود حسن', 'شركة النيل للتجارة', 'مؤسسة الأمل', 'إبراهيم علي', 'ليلى حسن']
-    products = ['هاتف ذكي S24', 'لابتوب ديل XPS', 'ساعة ذكية Pro', 'سماعات لاسلكية', 'شاشة 4K LG']
-    cities = ['القاهرة', 'الإسكندرية', 'المنصورة', 'أسوان', 'دبي', 'الرياض']
+    
+    # تصنيفات تحاكي بيئة أمازون وعلي بابا
+    vendors = ['Samsung Official', 'Apple Global Store', 'Nike Middle East', 'Xiaomi China', 'Dell Tech']
+    shipping_partners = ['Amazon Shipping', 'DHL Express', 'Aramex', 'FedEx', 'Bosta']
+    hubs = ['Shenzhen Hub (China)', 'Jebel Ali Center (UAE)', 'Cairo Central Warehouse', 'Alexandria Port']
     
     data = {
-        'الرقم السيادي (Sovereign ID)': ['ID' + ''.join(random.choices(string.digits, k=200)) for _ in range(size)],
-        'العميل': [random.choice(customers) for _ in range(size)],
-        'المنتج': [random.choice(products) for _ in range(size)],
-        'التكلفة': [random.uniform(1000, 50000) for _ in range(size)],
-        'المصدر': [random.choice(cities) for _ in range(size)],
-        'الوجهة': [random.choice(cities) for _ in range(size)],
-        'حالة الدفع': [random.choice(['مدفوع ✅', 'عند الاستلام 💵']) for _ in range(size)],
-        'الموعد المخطط (ساعة)': [random.randint(24, 72) for _ in range(size)],
-        'الموعد الفعلي (ساعة)': [random.randint(20, 80) for _ in range(size)],
+        'الرقم السيادي العالمي (Global PID)': ['OK-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=200)) for _ in range(size)],
+        'البائع / المورد (Vendor)': [random.choice(vendors) for _ in range(size)],
+        'مركز التوزيع (Hub)': [random.choice(hubs) for _ in range(size)],
+        'شركة التوصيل (Courier Partner)': [random.choice(shipping_partners) for _ in range(size)],
+        'سعر المنتج ($)': [round(random.uniform(20, 2500), 2) for _ in range(size)],
+        'حالة المخزون اللحظية': [random.choice(['متوفر ✅', 'طلب مسبق ⏳', 'آخر قطعة 🔥']) for _ in range(size)],
+        'وقت المعالجة في المخزن (ساعة)': [random.randint(2, 12) for _ in range(size)],
+        'زمن الشحن المخطط (ساعة)': [random.randint(48, 168) for _ in range(size)],
+        'زمن الشحن الفعلي (ساعة)': [random.randint(40, 200) for _ in range(size)],
     }
     
     df = pd.DataFrame(data)
-    df['الضريبة (14%)'] = (df['التكلفة'] * 0.14).round(2)
-    df['الإجمالي'] = (df['التكلفة'] + df['الضريبة (14%)']).round(2)
-    df['الفارق الزمني'] = df['الموعد الفعلي (ساعة)'] - df['الموعد المخطط (ساعة)']
-    df['حالة التوصيل'] = df['الفارق الزمني'].apply(lambda x: 'تأخير ⚠️' if x > 0 else 'في الموعد ✅')
-    
+    # منطق البيزنس (الانتفاع والربحية)
+    df['عمولة المنصة (10%)'] = (df['سعر المنتج ($)'] * 0.10).round(2)
+    df['صافي ربح المورد'] = (df['سعر المنتج ($)'] - df['عمولة المنصة (10%)']).round(2)
+    df['انحراف كفاءة الشحن'] = df['زمن الشحن الفعلي (ساعة)'] - df['زمن الشحن المخطط (ساعة)']
     return df
 
-with st.spinner("🚀 جاري مزامنة قاعدة البيانات السيادية..."):
-    df = generate_fixed_business_data()
+with st.spinner("🚀 جاري محاكاة بيئة البيانات الضخمة لـ OKORT..."):
+    df = generate_amazon_scale_data()
 
-st.title("📊 نظام OKORT للإدارة اللوجستية الذكية")
+st.title("🌐 محرك OKORT للتحكم في سلاسل الإمداد العالمية")
+st.markdown("---")
 
-# --- لوحة التحكم الجانبية ---
-st.sidebar.header("📥 مركز التقارير والتحقق")
+# --- لوحة مؤشرات الأداء (Dashboard) ---
+st.subheader("📊 لوحة مراقبة العمليات المركزية")
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.metric("حجم التجارة (GMV)", f"${df['سعر المنتج ($)'].sum():,.0f}")
+with c2:
+    st.metric("أرباح المنصة المتوقعة", f"${df['عمولة المنصة (10%)'].sum():,.0f}")
+with c3:
+    shipping_efficiency = (len(df[df['انحراف كفاءة الشحن'] <= 0]) / len(df)) * 100
+    st.metric("دقة مواعيد التوصيل", f"{shipping_efficiency:.1f}%")
+with c4:
+    st.metric("إجمالي العمليات النشطة", f"{len(df):,}")
 
-# دالة تحويل الإكسيل مع ضمان الترميز الصحيح
-def to_excel(df_in):
+st.divider()
+
+# --- محرك البحث والربط السيادي ---
+st.subheader("🔍 تتبع دورة حياة الطلب (Cross-Platform Tracking)")
+with st.form("global_search"):
+    target = st.text_input("أدخل معرف الطلب السيادي (200 خانة):").strip()
+    submit = st.form_submit_button("🚀 تحليل رحلة المنتج والبيانات المالية")
+
+if submit:
+    res = df[df['الرقم السيادي العالمي (Global PID)'] == target]
+    if not res.empty:
+        r = res.iloc[0]
+        st.success("🎯 تم الربط السيادي بنجاح بين المورد والمخزن وشركة الشحن")
+        
+        col_v, col_l, col_f = st.columns(3)
+        with col_v:
+            st.markdown("#### 🏭 المورد والمخزون")
+            st.write(f"**المورد:** {r['البائع / المورد (Vendor)']}")
+            st.write(f"**نقطة الانطلاق:** {r['مركز التوزيع (Hub)']}")
+            st.write(f"**الحالة:** {r['حالة المخزون اللحظية']}")
+        
+        with col_l:
+            st.markdown("#### 🚚 التحليل اللوجستي")
+            st.write(f"**الناقل:** {r['شركة التوصيل (Courier Partner)']}")
+            st.write(f"**المخطط:** {r['زمن الشحن المخطط (ساعة)']} ساعة")
+            diff = r['انحراف كفاءة الشحن']
+            if diff > 0:
+                st.error(f"**تأخير:** {diff} ساعة")
+            else:
+                st.success(f"**مبكر بـ:** {abs(diff)} ساعة")
+        
+        with col_f:
+            st.markdown("#### 💰 التدفق المالي")
+            st.write(f"**سعر البيع:** ${r['سعر المنتج ($)']}")
+            st.write(f"**عمولة المنصة:** ${r['عمولة المنصة (10%)']}")
+            st.markdown(f"**صافي المورد:** `${r['صافي ربح المورد']}`")
+    else:
+        st.error("رقم الطلب غير موجود. يرجى التأكد من نسخة الإكسيل.")
+
+# --- مركز تحميل التقارير ---
+st.sidebar.header("📥 مركز تقارير الإدارة")
+def to_excel_global(df_in):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        # تصدير أول 1000 سجل للمعاينة السريعة والمطابقة
-        df_in.head(1000).to_excel(writer, index=False, sheet_name='Logistics_Report')
+        df_in.head(5000).to_excel(writer, index=False)
     return output.getvalue()
 
 st.sidebar.download_button(
-    label="⬇️ تحميل سجل المطابقة (Excel)",
-    data=to_excel(df),
-    file_name='OKORT_Verification_Sheet.xlsx',
-    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    "📊 تحميل سجل العمليات الموحد", 
+    to_excel_global(df), 
+    "OKORT_Global_Trade_Report.xlsx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
-# --- واجهة البحث ---
-st.subheader("🔍 محرك الاستعلام اللحظي")
-st.info("قم بنسخ الرقم السيادي من ملف الإكسيل المحمل ولصقه أدناه.")
-
-with st.form("biz_search"):
-    # تنظيف النص المدخل من أي مسافات زائدة
-    target_input = st.text_input("أدخل الرقم السيادي (200 خانة):").strip()
-    submit = st.form_submit_button("🚀 بدء التحليل المالي واللوجستي")
-
-if submit:
-    if target_input:
-        # البحث الدقيق
-        res = df[df['الرقم السيادي (Sovereign ID)'] == target_input]
-        
-        if not res.empty:
-            r = res.iloc[0]
-            st.success(f"🎯 تم العثور على شحنة العميل: {r['العميل']}")
-            
-            # عرض التقارير الاحترافية
-            col_a, col_b = st.columns(2)
-            with col_a:
-                st.markdown("### 💳 التقرير المالي")
-                st.metric("الإجمالي المستحق", f"{r['الإجمالي']:,} ج.م")
-                st.write(f"**الضريبة:** {r['الضريبة (14%)']:,} ج.م")
-                st.write(f"**الحالة:** {r['حالة الدفع']}")
-            
-            with col_b:
-                st.markdown("### ⏱️ تقرير كفاءة التوصيل")
-                diff = r['الفارق الزمني']
-                status_color = "red" if diff > 0 else "green"
-                st.markdown(f"**الوضع الحالي:** <span style='color:{status_color}'>{r['حالة التوصيل']}</span>", unsafe_allow_html=True)
-                st.write(f"**المخطط:** {r['الموعد المخطط (ساعة)']} ساعة")
-                st.write(f"**الفعلي:** {r['الموعد الفعلي (ساعة)']} ساعة")
-        else:
-            st.error("⚠️ الرقم غير موجود. تأكد من أنك لم تقم بعمل Refresh للموقع بعد تحميل ملف الإكسيل.")
-    else:
-        st.warning("يرجى إدخال رقم الشحنة أولاً.")
-
-st.markdown("<br><hr><p style='text-align: center; color: gray;'>تكنولوجيا OKORT © 2026 - رؤية إدارية متكاملة</p>", unsafe_allow_html=True)
