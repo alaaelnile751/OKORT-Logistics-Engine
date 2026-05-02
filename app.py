@@ -3,13 +3,15 @@ import pandas as pd
 import random
 import string
 import io
-from datetime import datetime, timedelta
 
 st.set_page_config(page_title="OKORT Logistics BI", layout="wide")
 
-# --- محرك توليد البيانات التجاري ---
+# --- محرك توليد البيانات الثابت (لضمان مطابقة البحث) ---
 @st.cache_data
-def generate_business_data():
+def generate_fixed_business_data():
+    # تثبيت العشوائية لضمان عدم تغير البيانات عند الرفرش
+    random.seed(42) 
+    
     size = 100000 
     customers = ['أحمد محمد علي', 'سارة محمود حسن', 'شركة النيل للتجارة', 'مؤسسة الأمل', 'إبراهيم علي', 'ليلى حسن']
     products = ['هاتف ذكي S24', 'لابتوب ديل XPS', 'ساعة ذكية Pro', 'سماعات لاسلكية', 'شاشة 4K LG']
@@ -24,86 +26,76 @@ def generate_business_data():
         'الوجهة': [random.choice(cities) for _ in range(size)],
         'حالة الدفع': [random.choice(['مدفوع ✅', 'عند الاستلام 💵']) for _ in range(size)],
         'الموعد المخطط (ساعة)': [random.randint(24, 72) for _ in range(size)],
-        'الموعد الفعلي (ساعة)': [random.randint(20, 80) for _ in range(size)], # لتوليد تأخيرات عشوائية
+        'الموعد الفعلي (ساعة)': [random.randint(20, 80) for _ in range(size)],
     }
     
     df = pd.DataFrame(data)
     df['الضريبة (14%)'] = (df['التكلفة'] * 0.14).round(2)
     df['الإجمالي'] = (df['التكلفة'] + df['الضريبة (14%)']).round(2)
-    # حساب الفارق (Performance Gap)
     df['الفارق الزمني'] = df['الموعد الفعلي (ساعة)'] - df['الموعد المخطط (ساعة)']
     df['حالة التوصيل'] = df['الفارق الزمني'].apply(lambda x: 'تأخير ⚠️' if x > 0 else 'في الموعد ✅')
     
     return df
 
-with st.spinner("🚀 جاري معالجة البيانات التجارية..."):
-    df = generate_business_data()
+with st.spinner("🚀 جاري مزامنة قاعدة البيانات السيادية..."):
+    df = generate_fixed_business_data()
 
 st.title("📊 نظام OKORT للإدارة اللوجستية الذكية")
-st.markdown("---")
 
-# --- 1. لوحة تقارير الإدارة (Executive Insights) ---
-st.subheader("📈 تقارير الأداء العام (نظرة إدارية)")
-c1, c2, c3, c4 = st.columns(4)
+# --- لوحة التحكم الجانبية ---
+st.sidebar.header("📥 مركز التقارير والتحقق")
 
-with c1:
-    total_rev = df['الإجمالي'].sum()
-    st.metric("إجمالي التدفق المالي", f"{total_rev:,.0f} ج.م")
-with c2:
-    total_tax = df['الضريبة (14%)'].sum()
-    st.metric("إجمالي الضرائب المستحقة", f"{total_tax:,.0f} ج.م")
-with c3:
-    on_time_rate = (len(df[df['حالة التوصيل'] == 'في الموعد ✅']) / len(df)) * 100
-    st.metric("كفاءة التوصيل (KPI)", f"{on_time_rate:.1f}%")
-with c4:
-    st.metric("إجمالي العمليات", f"{len(df):,}")
-
-st.divider()
-
-# --- 2. محرك البحث والتحقق من الشحنة ---
-st.subheader("🔍 الاستعلام التفصيلي ومطابقة الأداء")
-with st.form("biz_search"):
-    target = st.text_input("أدخل الرقم السيادي للشحنة للتحليل:")
-    submit = st.form_submit_button("🚀 تحليل البيانات اللحظي")
-
-if submit:
-    res = df[df['الرقم السيادي (Sovereign ID)'] == target.strip()]
-    if not res.empty:
-        r = res.iloc[0]
-        st.success("🎯 تم استدعاء السجل ومطابقته بنجاح")
-        
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.markdown("#### 📦 تفاصيل الشحنة")
-            st.write(f"**العميل:** {r['العميل']}")
-            st.write(f"**المنتج:** {r['المنتج']}")
-            st.write(f"**المسار:** من {r['المصدر']} إلى {r['الوجهة']}")
-            st.info(f"💰 **الإجمالي المالي:** {r['الإجمالي']:,} ج.م ({r['حالة الدفع']})")
-            
-        with col_b:
-            st.markdown("#### ⏱️ تحليل الأداء (مخطط vs فعلي)")
-            st.write(f"**الموعد المخطط:** {r['الموعد المخطط (ساعة)']} ساعة")
-            st.write(f"**الموعد الفعلي:** {r['الموعد الفعلي (ساعة)']} ساعة")
-            
-            diff = r['الفارق الزمني']
-            if diff > 0:
-                st.error(f"⚠️ هناك تأخير قدره {diff} ساعة عن المخطط")
-            else:
-                st.success(f"✅ تم التسليم قبل الموعد بـ {abs(diff)} ساعة")
-    else:
-        st.error("⚠️ الرقم غير موجود.")
-
-# --- 3. تصدير التقارير ---
-st.sidebar.header("📥 مركز التقارير")
-def to_excel(df):
+# دالة تحويل الإكسيل مع ضمان الترميز الصحيح
+def to_excel(df_in):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.head(5000).to_excel(writer, index=False, sheet_name='Logistics_Report')
+        # تصدير أول 1000 سجل للمعاينة السريعة والمطابقة
+        df_in.head(1000).to_excel(writer, index=False, sheet_name='Logistics_Report')
     return output.getvalue()
 
 st.sidebar.download_button(
-    label="📊 تحميل تقرير الأداء (Excel)",
+    label="⬇️ تحميل سجل المطابقة (Excel)",
     data=to_excel(df),
-    file_name='OKORT_Business_Report.xlsx',
+    file_name='OKORT_Verification_Sheet.xlsx',
     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 )
+
+# --- واجهة البحث ---
+st.subheader("🔍 محرك الاستعلام اللحظي")
+st.info("قم بنسخ الرقم السيادي من ملف الإكسيل المحمل ولصقه أدناه.")
+
+with st.form("biz_search"):
+    # تنظيف النص المدخل من أي مسافات زائدة
+    target_input = st.text_input("أدخل الرقم السيادي (200 خانة):").strip()
+    submit = st.form_submit_button("🚀 بدء التحليل المالي واللوجستي")
+
+if submit:
+    if target_input:
+        # البحث الدقيق
+        res = df[df['الرقم السيادي (Sovereign ID)'] == target_input]
+        
+        if not res.empty:
+            r = res.iloc[0]
+            st.success(f"🎯 تم العثور على شحنة العميل: {r['العميل']}")
+            
+            # عرض التقارير الاحترافية
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.markdown("### 💳 التقرير المالي")
+                st.metric("الإجمالي المستحق", f"{r['الإجمالي']:,} ج.م")
+                st.write(f"**الضريبة:** {r['الضريبة (14%)']:,} ج.م")
+                st.write(f"**الحالة:** {r['حالة الدفع']}")
+            
+            with col_b:
+                st.markdown("### ⏱️ تقرير كفاءة التوصيل")
+                diff = r['الفارق الزمني']
+                status_color = "red" if diff > 0 else "green"
+                st.markdown(f"**الوضع الحالي:** <span style='color:{status_color}'>{r['حالة التوصيل']}</span>", unsafe_allow_html=True)
+                st.write(f"**المخطط:** {r['الموعد المخطط (ساعة)']} ساعة")
+                st.write(f"**الفعلي:** {r['الموعد الفعلي (ساعة)']} ساعة")
+        else:
+            st.error("⚠️ الرقم غير موجود. تأكد من أنك لم تقم بعمل Refresh للموقع بعد تحميل ملف الإكسيل.")
+    else:
+        st.warning("يرجى إدخال رقم الشحنة أولاً.")
+
+st.markdown("<br><hr><p style='text-align: center; color: gray;'>تكنولوجيا OKORT © 2026 - رؤية إدارية متكاملة</p>", unsafe_allow_html=True)
